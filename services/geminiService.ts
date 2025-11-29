@@ -43,7 +43,7 @@ export const enhancePrompt = async (apiKey: string | undefined, input: string): 
     model: "gemini-2.5-flash",
     contents: [{ parts: [{ text: input }] }],
     config: {
-      systemInstruction: "You are an expert prompt engineer for video generation models. Convert the user's short input or keywords into a detailed, visually rich prompt suitable for generating a video. Focus on movement, lighting, camera angles, and atmosphere. Keep the result concise (max 2-3 sentences). Output ONLY the enhanced prompt text.",
+      systemInstruction: "You are an expert director and prompt engineer for AI video generation models like Veo. Convert the user's raw keywords or simple description into a highly detailed, cinematic video prompt. Focus on lighting (e.g., volumetric, golden hour), camera movement (e.g., slow pan, dolly zoom, drone shot), texture, and atmosphere. Keep the prompt concise (under 60 words) but visually evocative. Output ONLY the enhanced prompt text, no explanations.",
     },
   });
   return response.text || input;
@@ -63,7 +63,7 @@ export const generateVeoVideo = async (
 
   let operation = await ai.models.generateVideos({
     model: 'veo-3.1-fast-generate-preview',
-    prompt: prompt || "Animate this image", 
+    prompt: prompt || "Animate this image in a cinematic style", 
     image: {
       imageBytes: imageBase64,
       mimeType: mimeType,
@@ -95,8 +95,6 @@ export const generateVeoVideo = async (
   }
 
   // The URI needs the API key appended to be accessible
-  // If we have an explicit key, use it. Otherwise use the env one (which might be null if strictly relying on explicit).
-  // Ideally, getAiClient handles the check, but here we need the string.
   const effectiveKey = apiKey || process.env.API_KEY;
   return `${videoUri}&key=${effectiveKey}`;
 };
@@ -138,7 +136,6 @@ export const generateClonedSpeech = async (
   const ai = getAiClient(apiKey);
   
   // Using the native audio model which supports multimodal input and audio output.
-  // This allows us to pass a reference audio file and ask the model to mimic it.
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-native-audio-preview-09-2025",
     contents: [

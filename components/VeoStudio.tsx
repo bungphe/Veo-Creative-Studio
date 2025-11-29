@@ -13,6 +13,7 @@ const VeoStudio: React.FC<VeoStudioProps> = ({ apiKeyReady, apiKey }) => {
   const [imageMimeType, setImageMimeType] = useState<string>('image/png');
   const [prompt, setPrompt] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancementError, setEnhancementError] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.LANDSCAPE);
   const [state, setState] = useState<VideoGenerationState>({
     isGenerating: false,
@@ -49,12 +50,13 @@ const VeoStudio: React.FC<VeoStudioProps> = ({ apiKeyReady, apiKey }) => {
     if (!prompt.trim() || !apiKeyReady) return;
     
     setIsEnhancing(true);
+    setEnhancementError(null);
     try {
         const enhanced = await enhancePrompt(apiKey, prompt);
         setPrompt(enhanced);
-    } catch (err) {
+    } catch (err: any) {
         console.error("Failed to enhance prompt", err);
-        // Silently fail or minimal indication as this is a convenience feature
+        setEnhancementError(err.message || "Failed to enhance prompt. Please check your API key.");
     } finally {
         setIsEnhancing(false);
     }
@@ -154,26 +156,42 @@ const VeoStudio: React.FC<VeoStudioProps> = ({ apiKeyReady, apiKey }) => {
         {/* Parameters */}
         <div className="space-y-4">
           <div>
-            <div className="flex justify-between items-center mb-1">
+            <div className="flex justify-between items-end mb-2">
                 <label className="block text-sm font-medium text-zinc-300">
                 Prompt <span className="text-zinc-500">(Optional)</span>
                 </label>
-                <button
-                    onClick={handleEnhancePrompt}
-                    disabled={isEnhancing || !prompt.trim() || !apiKeyReady}
-                    className="text-xs flex items-center gap-1 text-purple-400 hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-purple-900/10 px-2 py-1 rounded-full border border-purple-500/20"
-                    title="Convert keywords into a detailed prompt with AI"
-                >
-                    {isEnhancing ? <IconLoading className="animate-spin h-3 w-3 text-purple-400" /> : <IconSparkles />}
-                    {isEnhancing ? 'Enhancing...' : 'Enhance with AI'}
-                </button>
             </div>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Type keywords (e.g., 'cyberpunk city rain') and click 'Enhance', or type a full description..."
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder-zinc-600 resize-none h-24"
-            />
+            
+            <div className="relative">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe your idea or type keywords (e.g. 'cyberpunk city, rain, neon')..."
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 pb-10 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder-zinc-600 resize-none h-28"
+                />
+                
+                {/* Enhance Button positioned inside the text area */}
+                <div className="absolute bottom-2 right-2 left-2 flex justify-end">
+                    <button
+                        onClick={handleEnhancePrompt}
+                        disabled={isEnhancing || !prompt.trim() || !apiKeyReady}
+                        className={`
+                            text-xs flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-full border 
+                            ${!prompt.trim() 
+                                ? 'opacity-0 pointer-events-none' 
+                                : 'opacity-100 bg-purple-900/20 border-purple-500/30 text-purple-300 hover:bg-purple-900/40 hover:text-white hover:border-purple-400 shadow-sm'
+                            }
+                        `}
+                        title="Convert your keywords into a detailed video generation prompt using AI"
+                    >
+                        {isEnhancing ? <IconLoading className="animate-spin h-3 w-3 text-purple-400" /> : <IconSparkles />}
+                        {isEnhancing ? 'Enhancing...' : 'Enhance Prompt'}
+                    </button>
+                </div>
+            </div>
+            {enhancementError && (
+                 <p className="text-xs text-red-400 mt-1">{enhancementError}</p>
+            )}
           </div>
 
           <div>
@@ -243,7 +261,7 @@ const VeoStudio: React.FC<VeoStudioProps> = ({ apiKeyReady, apiKey }) => {
 
         {state.error && (
           <div className="p-3 bg-red-900/20 border border-red-900/50 rounded-lg">
-            <p className="text-xs text-red-300">{state.error}</p>
+            <p className="text-xs text-red-300 break-words">{state.error}</p>
           </div>
         )}
       </div>
